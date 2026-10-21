@@ -46,6 +46,16 @@ phpize && ./configure --enable-addrs && make && php -d extension=modules/addrs.s
 
 `PS_SERIALIZER_DECODE_FUNC(php)`（ext/session/session.c:1103）裸调 `PHP_VAR_UNSERIALIZE_INIT`，**不持 `BG(serialize_lock)`** ——session 数据里的 `C:` Serializable 条目在解码期间运行其 `unserialize()`，内层解析**共享 session 解码器的 var_hash**；gadget 内的解析后属性扩容释放已登记槽位，同一 session 流中随后的 `R:n;` 读已释放内存。ASan 实证栈：`zif_session_start → php_session_decode → ps_srlzr_decode_php → R: 处理器 → heap-use-after-free READ`（见 `session_decode_uaf_evidence.txt`，一键复现 `session_decode_uaf_poc.php`）。
 
+### UAF→RCE 升级阶梯（实测战报）
+
+| Rung | 内容 | 状态 |
+|---|---|---|
+| 0 | session_start() 解码期 UAF（ASan） | ✅ |
+| 1 | 悬空槽位 zval 字节完全可控（流内字符串回收 320B 块，偏移 40 精确命中） | ✅ php8.3.6 实测 |
+| 2a | 堆地址泄漏（R: 写穿把 zend_reference 指针写进回收串，session 回显带出，7 指针/轮，5/5 轮） | ✅ `session_uaf_leak.php` |
+| 2b | 任意地址读（第 1 轮泄漏簇地址→第 2 轮伪造 IS_STRING；需 fpm worker 跨请求进程复用） | ⛔ 被 fpm 解码期堆回收插队阻塞（128 密集喷射+填充+重试全 miss；需分配链路追踪级别的 grooming，非调参可解） |
+| 3 | RCE（伪造 IS_OBJECT + 假 handlers，请求结束析构触发——session 场景无脚本控制权，不能走 calif 的闭包直调） | 📋 路线已定，依赖 2b |
+
 **攻击面换轴**：不再需要 `unserialize()` 入口——任何把攻击者序列化数据送进 session 存储的向量（自建 save handler、Redis/DB 会话、其它漏洞种下 session 文件）+ 应用在 `session_start()` 前已加载递归 Serializable gadget 类 → 请求处理第一行代码前即触发。前提 gadget 类依旧苛刻。当前实证级别：受控悬空读 + 稳定 DoS；升 RCE 需 app 侧配合（session 数据回显或可控二次触发），未验证不宣称。
 
 **关联面关闭记录（session.upload_progress 全攻面审计）**：
@@ -66,6 +76,7 @@ phpize && ./configure --enable-addrs && make && php -d extension=modules/addrs.s
 | `uaf_trigger.php` | 25 行最小 UAF 触发器（ASan 证据用） |
 | `addrs.c` | EG/handler/模块表偏移探针扩展（换构建适配第一步） |
 | `asan_uaf_evidence.txt` | ASan 报告原件 |
+| `session_uaf_leak.php` | 升级 Rung1+2a 一键 PoC：悬空槽位字节可控 + 堆地址泄漏（plant/read 两段式） |
 | `session_decode_uaf_poc.php` | 新发现一键 PoC：session_start() 解码期 UAF（ASan 复火） |
 | `session_decode_uaf_evidence.txt` | session 解码 UAF 的 ASan 报告原件 |
 | `复现报告.md` | 完整复现报告（含 jackalsyn 帖证伪四证据、阴性对照、绕过实测） |
