@@ -1,0 +1,123 @@
+=================================================================
+==171447==ERROR: AddressSanitizer: heap-use-after-free on address 0x51200001ad88 at pc 0x5933f464595b bp 0x7ffe8a184230 sp 0x7ffe8a184220
+READ of size 1 at 0x51200001ad88 thread T0
+    #0 0x5933f464595a in zval_get_type /home/ubuntu/php-asan/Zend/zend_types.h:650
+    #1 0x5933f464f221 in php_var_unserialize_internal ext/standard/var_unserializer.re:910
+    #2 0x5933f464a59b in process_nested_array_data ext/standard/var_unserializer.re:512
+    #3 0x5933f46526b8 in php_var_unserialize_internal ext/standard/var_unserializer.re:1124
+    #4 0x5933f464d11a in php_var_unserialize ext/standard/var_unserializer.re:858
+    #5 0x5933f438de89 in ps_srlzr_decode_php /home/ubuntu/php-asan/ext/session/session.c:1121
+    #6 0x5933f4388f53 in php_session_decode /home/ubuntu/php-asan/ext/session/session.c:279
+    #7 0x5933f4389d45 in php_session_initialize /home/ubuntu/php-asan/ext/session/session.c:488
+    #8 0x5933f4390e2f in php_session_start /home/ubuntu/php-asan/ext/session/session.c:1713
+    #9 0x5933f439a95d in zif_session_start /home/ubuntu/php-asan/ext/session/session.c:2703
+    #10 0x5933f496e50d in ZEND_DO_ICALL_SPEC_RETVAL_UNUSED_HANDLER /home/ubuntu/php-asan/Zend/zend_vm_execute.h:1287
+    #11 0x5933f4ad2116 in execute_ex /home/ubuntu/php-asan/Zend/zend_vm_execute.h:58804
+    #12 0x5933f4ae70cd in zend_execute /home/ubuntu/php-asan/Zend/zend_vm_execute.h:64236
+    #13 0x5933f4939c86 in zend_eval_stringl /home/ubuntu/php-asan/Zend/zend_execute_API.c:1355
+    #14 0x5933f493a0ec in zend_eval_stringl_ex /home/ubuntu/php-asan/Zend/zend_execute_API.c:1397
+    #15 0x5933f493a189 in zend_eval_string_ex /home/ubuntu/php-asan/Zend/zend_execute_API.c:1407
+    #16 0x5933f4c49753 in do_cli /home/ubuntu/php-asan/sapi/cli/php_cli.c:965
+    #17 0x5933f4c4b438 in main /home/ubuntu/php-asan/sapi/cli/php_cli.c:1310
+    #18 0x7937d102a1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 328820b908de8ea1ef79afa8995e302e819163d7)
+    #19 0x7937d102a28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 328820b908de8ea1ef79afa8995e302e819163d7)
+    #20 0x5933f4003934 in _start (/home/ubuntu/php-asan/sapi/cli/php+0x403934) (BuildId: 378481c9c6a865ad68169363b70d5eff560722a2)
+
+0x51200001ad88 is located 72 bytes inside of 320-byte region [0x51200001ad40,0x51200001ae80)
+freed by thread T0 here:
+    #0 0x7937d14fc4d8 in free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52
+    #1 0x5933f4840ce8 in __zend_free /home/ubuntu/php-asan/Zend/zend_alloc.c:3308
+    #2 0x5933f483e1bf in _efree /home/ubuntu/php-asan/Zend/zend_alloc.c:2747
+    #3 0x5933f4b16e94 in zend_hash_do_resize /home/ubuntu/php-asan/Zend/zend_hash.c:1321
+    #4 0x5933f4b139be in _zend_hash_add_or_update_i /home/ubuntu/php-asan/Zend/zend_hash.c:873
+    #5 0x5933f4b1490f in zend_hash_add_new /home/ubuntu/php-asan/Zend/zend_hash.c:1009
+    #6 0x5933f4bce001 in zend_std_write_property /home/ubuntu/php-asan/Zend/zend_object_handlers.c:1180
+    #7 0x5933f4a891b8 in ZEND_ASSIGN_OBJ_SPEC_CV_CONST_OP_DATA_CONST_HANDLER /home/ubuntu/php-asan/Zend/zend_vm_execute.h:43448
+    #8 0x5933f4ae3638 in execute_ex /home/ubuntu/php-asan/Zend/zend_vm_execute.h:63270
+    #9 0x5933f49370b9 in zend_call_function /home/ubuntu/php-asan/Zend/zend_execute_API.c:1000
+    #10 0x5933f49380da in zend_call_known_function /home/ubuntu/php-asan/Zend/zend_execute_API.c:1094
+    #11 0x5933f4b69417 in zend_call_method /home/ubuntu/php-asan/Zend/zend_interfaces.c:83
+    #12 0x5933f4b67a7a in zend_call_method_with_1_params /home/ubuntu/php-asan/Zend/zend_interfaces.h:52
+    #13 0x5933f4b6b952 in zend_user_unserialize /home/ubuntu/php-asan/Zend/zend_interfaces.c:452
+    #14 0x5933f464c359 in object_custom ext/standard/var_unserializer.re:776
+    #15 0x5933f46511c5 in php_var_unserialize_internal ext/standard/var_unserializer.re:1291
+    #16 0x5933f464a59b in process_nested_array_data ext/standard/var_unserializer.re:512
+    #17 0x5933f46526b8 in php_var_unserialize_internal ext/standard/var_unserializer.re:1124
+    #18 0x5933f464d11a in php_var_unserialize ext/standard/var_unserializer.re:858
+    #19 0x5933f438de89 in ps_srlzr_decode_php /home/ubuntu/php-asan/ext/session/session.c:1121
+    #20 0x5933f4388f53 in php_session_decode /home/ubuntu/php-asan/ext/session/session.c:279
+    #21 0x5933f4389d45 in php_session_initialize /home/ubuntu/php-asan/ext/session/session.c:488
+    #22 0x5933f4390e2f in php_session_start /home/ubuntu/php-asan/ext/session/session.c:1713
+    #23 0x5933f439a95d in zif_session_start /home/ubuntu/php-asan/ext/session/session.c:2703
+    #24 0x5933f496e50d in ZEND_DO_ICALL_SPEC_RETVAL_UNUSED_HANDLER /home/ubuntu/php-asan/Zend/zend_vm_execute.h:1287
+    #25 0x5933f4ad2116 in execute_ex /home/ubuntu/php-asan/Zend/zend_vm_execute.h:58804
+    #26 0x5933f4ae70cd in zend_execute /home/ubuntu/php-asan/Zend/zend_vm_execute.h:64236
+    #27 0x5933f4939c86 in zend_eval_stringl /home/ubuntu/php-asan/Zend/zend_execute_API.c:1355
+    #28 0x5933f493a0ec in zend_eval_stringl_ex /home/ubuntu/php-asan/Zend/zend_execute_API.c:1397
+    #29 0x5933f493a189 in zend_eval_string_ex /home/ubuntu/php-asan/Zend/zend_execute_API.c:1407
+
+previously allocated by thread T0 here:
+    #0 0x7937d14fd9c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
+    #1 0x5933f4840ba0 in __zend_malloc /home/ubuntu/php-asan/Zend/zend_alloc.c:3280
+    #2 0x5933f483e0e2 in _emalloc /home/ubuntu/php-asan/Zend/zend_alloc.c:2737
+    #3 0x5933f4b0dfa3 in zend_hash_real_init_mixed_ex /home/ubuntu/php-asan/Zend/zend_hash.c:177
+    #4 0x5933f4b0e8e6 in zend_hash_real_init_ex /home/ubuntu/php-asan/Zend/zend_hash.c:241
+    #5 0x5933f4b0f489 in zend_hash_real_init /home/ubuntu/php-asan/Zend/zend_hash.c:327
+    #6 0x5933f4b102d4 in zend_hash_extend /home/ubuntu/php-asan/Zend/zend_hash.c:408
+    #7 0x5933f464cc5b in object_common ext/standard/var_unserializer.re:829
+    #8 0x5933f46516a1 in php_var_unserialize_internal ext/standard/var_unserializer.re:1346
+    #9 0x5933f464d11a in php_var_unserialize ext/standard/var_unserializer.re:858
+    #10 0x5933f466244f in php_unserialize_with_options /home/ubuntu/php-asan/ext/standard/var.c:1461
+    #11 0x5933f4662f36 in zif_unserialize /home/ubuntu/php-asan/ext/standard/var.c:1519
+    #12 0x5933f496ecaa in ZEND_DO_ICALL_SPEC_RETVAL_USED_HANDLER /home/ubuntu/php-asan/Zend/zend_vm_execute.h:1351
+    #13 0x5933f4ad2164 in execute_ex /home/ubuntu/php-asan/Zend/zend_vm_execute.h:58809
+    #14 0x5933f49370b9 in zend_call_function /home/ubuntu/php-asan/Zend/zend_execute_API.c:1000
+    #15 0x5933f49380da in zend_call_known_function /home/ubuntu/php-asan/Zend/zend_execute_API.c:1094
+    #16 0x5933f4b69417 in zend_call_method /home/ubuntu/php-asan/Zend/zend_interfaces.c:83
+    #17 0x5933f4b67a7a in zend_call_method_with_1_params /home/ubuntu/php-asan/Zend/zend_interfaces.h:52
+    #18 0x5933f4b6b952 in zend_user_unserialize /home/ubuntu/php-asan/Zend/zend_interfaces.c:452
+    #19 0x5933f464c359 in object_custom ext/standard/var_unserializer.re:776
+    #20 0x5933f46511c5 in php_var_unserialize_internal ext/standard/var_unserializer.re:1291
+    #21 0x5933f464a59b in process_nested_array_data ext/standard/var_unserializer.re:512
+    #22 0x5933f46526b8 in php_var_unserialize_internal ext/standard/var_unserializer.re:1124
+    #23 0x5933f464d11a in php_var_unserialize ext/standard/var_unserializer.re:858
+    #24 0x5933f438de89 in ps_srlzr_decode_php /home/ubuntu/php-asan/ext/session/session.c:1121
+    #25 0x5933f4388f53 in php_session_decode /home/ubuntu/php-asan/ext/session/session.c:279
+    #26 0x5933f4389d45 in php_session_initialize /home/ubuntu/php-asan/ext/session/session.c:488
+    #27 0x5933f4390e2f in php_session_start /home/ubuntu/php-asan/ext/session/session.c:1713
+    #28 0x5933f439a95d in zif_session_start /home/ubuntu/php-asan/ext/session/session.c:2703
+    #29 0x5933f496e50d in ZEND_DO_ICALL_SPEC_RETVAL_UNUSED_HANDLER /home/ubuntu/php-asan/Zend/zend_vm_execute.h:1287
+
+SUMMARY: AddressSanitizer: heap-use-after-free /home/ubuntu/php-asan/Zend/zend_types.h:650 in zval_get_type
+Shadow bytes around the buggy address:
+  0x51200001ab00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x51200001ab80: fa fa fa fa fa fa fa fa 00 00 00 00 00 00 00 00
+  0x51200001ac00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x51200001ac80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x51200001ad00: fa fa fa fa fa fa fa fa fd fd fd fd fd fd fd fd
+=>0x51200001ad80: fd[fd]fd fd fd fd fd fd fd fd fd fd fd fd fd fd
+  0x51200001ae00: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
+  0x51200001ae80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x51200001af00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x51200001af80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x51200001b000: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==171447==ABORTING
