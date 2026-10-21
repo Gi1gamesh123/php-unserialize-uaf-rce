@@ -42,6 +42,18 @@ phpize && ./configure --enable-addrs && make && php -d extension=modules/addrs.s
 
 `EG.function_table` @ +0x1b0、`EG.symbol_table` @ +0x130 在 8.1–8.5 实测稳定。
 
+## 新发现：session 解码路径同样中 UAF（`session_start()` 时刻）
+
+`PS_SERIALIZER_DECODE_FUNC(php)`（ext/session/session.c:1103）裸调 `PHP_VAR_UNSERIALIZE_INIT`，**不持 `BG(serialize_lock)`** ——session 数据里的 `C:` Serializable 条目在解码期间运行其 `unserialize()`，内层解析**共享 session 解码器的 var_hash**；gadget 内的解析后属性扩容释放已登记槽位，同一 session 流中随后的 `R:n;` 读已释放内存。ASan 实证栈：`zif_session_start → php_session_decode → ps_srlzr_decode_php → R: 处理器 → heap-use-after-free READ`（见 `session_decode_uaf_evidence.txt`，一键复现 `session_decode_uaf_poc.php`）。
+
+**攻击面换轴**：不再需要 `unserialize()` 入口——任何把攻击者序列化数据送进 session 存储的向量（自建 save handler、Redis/DB 会话、其它漏洞种下 session 文件）+ 应用在 `session_start()` 前已加载递归 Serializable gadget 类 → 请求处理第一行代码前即触发。前提 gadget 类依旧苛刻。当前实证级别：受控悬空读 + 稳定 DoS；升 RCE 需 app 侧配合（session 数据回显或可控二次触发），未验证不宣称。
+
+**关联面关闭记录（session.upload_progress 全攻面审计）**：
+- 内存破坏侧四道引擎防线实测+读码钉死：数组 `array_init_size` 预分配（var_unserializer.re:1109）、`__unserialize`/Serializable 临时表预混合初始化（:795）、经典属性表 `zend_hash_extend` 预扩容（:829）、内部类（ArrayObject/SplObjectStorage/SplDoublyLinkedList 等）C 反序列化不产生堆悬空（登记栈临时量/预分配结构）
+- 注入侧关闭：`PS_SERIALIZER_ENCODE_FUNC(php)` 对任何含 `|` 的 key 拒绝编码（session.c:1072）——"session.upload_progress key 注入"CTF 老技巧在当前 PHP 已死（实测：注入 key 的 session 写盘为 0 字节）
+- mod_files 的 `php_session_valid_key`（mod_files.c:168）挡死 rfc1867 路径 sid 路径穿越
+- 2026-10 泄露事件中流传的 jackalsyn `session.upload_progress UAF` 分析为错误分析：其声称的悬空指针实际指向引用计数闭环保护的 `progress->data`（session.c:3189 `Z_TRY_ADDREF`），其 PoC 在 ASan-FPM 上零报错
+
 ## 附：事件核查结论
 
 2026-10 泄露事件（"php2shell"）期间流传的 jackalsyn.com `session.upload_progress UAF` 分析为**错误分析**（引用的 CVE-2026-109618/619 在 NVD/cveawg/cvelistV5 均不存在；其 PoC 在 ASan-FPM 上零报错；session.c 引用计数链闭环）。详见 `复现报告.md` 第一节。CVSS 评估：远程现实场景 ≈ 7.4（AC:H），流传的 9.2/9.8 忽略了 gadget 前提。
@@ -54,4 +66,6 @@ phpize && ./configure --enable-addrs && make && php -d extension=modules/addrs.s
 | `uaf_trigger.php` | 25 行最小 UAF 触发器（ASan 证据用） |
 | `addrs.c` | EG/handler/模块表偏移探针扩展（换构建适配第一步） |
 | `asan_uaf_evidence.txt` | ASan 报告原件 |
+| `session_decode_uaf_poc.php` | 新发现一键 PoC：session_start() 解码期 UAF（ASan 复火） |
+| `session_decode_uaf_evidence.txt` | session 解码 UAF 的 ASan 报告原件 |
 | `复现报告.md` | 完整复现报告（含 jackalsyn 帖证伪四证据、阴性对照、绕过实测） |
